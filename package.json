@@ -1,0 +1,38 @@
+{
+  "name": "betting-app",
+  "version": "1.0.0",
+  "description": "SAP CAP Betting Application",
+  "scripts": {
+    "start": "cds serve",
+    "watch": "cds watch",
+    "deploy": "cds deploy --to sqlite:betting.db"
+  },
+  "dependencies": {
+    "@sap/cds": "^9.4.4",
+    "@sap/generator-fiori": "^1.19.1",
+    "cors": "^2.8.5",
+    "express": "^4"
+  },
+  "devDependencies": {
+    "@cap-js/openapi": "^1.2.3",
+    "@cap-js/sqlite": "^2.0.4",
+    "cds-swagger-ui-express": "^0.10.0",
+    "sqlite3": "^5"
+  },
+  "cds": {
+    "requires": {
+      "db": {
+        "kind": "sqlite",
+        "impl": "@cap-js/sqlite",
+        "credentials": {
+          "database": "betting.db",
+          "url": "db/sqlite.db"
+        },
+        "assertIntegrityType": "DB"
+      },
+      "openapi": {
+        "impl": "@cap-js/openapi"
+      }
+    }
+  }
+}
