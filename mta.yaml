@@ -110,7 +110,38 @@ modules:
     requires:
       - name: cnma_guest_db
 
+  # --------------------- Destination Content ---------------------
+  - name: cnma_guest_destination_content
+    type: com.sap.application.content
+
+    requires:
+      - name: cnma_guest_xsuaa
+      - name: cnma_guest_html5_host
+      - name: cnma_guest_destination
+        parameters:
+          content-target: true
+      - name: cnma_guest_connectivity
+
+    parameters:
+      content:
+        instance:
+          existing_destinations_policy: update
+          destinations:
+            - Name: cnma_guest_html5_dest
+              ServiceInstanceName: cnma_guest_html5_host
+              sap.cloud.service: cnma.guest
+
+    build-parameters:
+      no-source: true
+
 resources:
+  # Connectivity
+  - name: cnma_guest_connectivity
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: connectivity
+      service-plan: lite
+
   # --------------------- HANA DB ---------------------
   - name: cnma_guest_db
     type: com.sap.xs.hdi-container
@@ -187,5 +218,3 @@ resources:
         version: 1.0.0
     requires:
       - name: cnma_guest_srv_api
-
-
