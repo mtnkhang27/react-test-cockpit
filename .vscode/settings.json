@@ -7,5 +7,7 @@
     // "csv (semicolon)",
     // "tab",
     // "tsv"
-  ]
+  ],
+  "SAP HANA SQLScript LSP.URL": "https://cf-eu10.cf.hana-tooling.ingress.orchestration.prod-eu10.hanacloud.ondemand.com/hrtt-service",
+  "SAP HANA SQLScript LSP.XsAdvancedHrttServiceUrl": ""
 }

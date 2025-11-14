@@ -1,38 +1,59 @@
 {
-  "name": "betting-app",
+  "name": "cnma_test_guest_cap-srv",
   "version": "1.0.0",
-  "description": "SAP CAP Betting Application",
+  "description": "CNMA Test Guest CAP backend service",
   "scripts": {
-    "start": "cds serve",
+    "start": "cds run",
     "watch": "cds watch",
-    "deploy": "cds deploy --to sqlite:betting.db"
+    "build": "cds build --production",
+    "build:react": "cd app && npm install && npm run build && node ../../scripts/override-manifest.js",
+    "build:mta": "mbt build -t gen --mtar mta.tar",
+    "build:all": "npm run build:react && npm run build:mta",
+    "deploy": "cf deploy gen/mta.tar",
+    "deploy:full": "npm run build:all && npm run deploy",
+    "undeploy": "cf undeploy cnma-guest-portal --delete-services --delete-service-keys",
+    "test": "jest"
   },
   "dependencies": {
-    "@sap/cds": "^9.4.4",
-    "@sap/generator-fiori": "^1.19.1",
+    "@cap-js/hana": "^2.3.4",
+    "@cap-js/sqlite": "^2.0.4",
+    "@sap/cds": "^9.4.3",
+    "@sap/cds-dk": "^9.4.3",
+    "@sap/xsenv": "^6.0.0",
+    "@sap/xssec": "^4.11.1",
     "cors": "^2.8.5",
     "express": "^4"
   },
-  "devDependencies": {
-    "@cap-js/openapi": "^1.2.3",
-    "@cap-js/sqlite": "^2.0.4",
-    "cds-swagger-ui-express": "^0.10.0",
-    "sqlite3": "^5"
+  "engines": {
+    "node": ">=18"
   },
   "cds": {
     "requires": {
       "db": {
-        "kind": "sqlite",
-        "impl": "@cap-js/sqlite",
-        "credentials": {
-          "database": "betting.db",
-          "url": "db/sqlite.db"
-        },
-        "assertIntegrityType": "DB"
+        "kind": "hana-cloud"
       },
-      "openapi": {
-        "impl": "@cap-js/openapi"
+      "auth": {
+        "kind": "mocked"
       }
+    },
+    "hana": {
+      "deploy-format": "hdbtable"
+    },
+    "build": {
+      "target": "gen",
+      "tasks": [
+        {
+          "for": "hana",
+          "dest": "../gen/db"
+        },
+        {
+          "for": "node-cf",
+          "dest": "../gen/srv"
+        }
+      ]
     }
-  }
+  },
+  "sapux": [
+    "app"
+  ]
 }

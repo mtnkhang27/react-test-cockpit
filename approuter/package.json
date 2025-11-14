@@ -1,0 +1,14 @@
+{
+  "name": "approuter",
+  "version": "1.0.0",
+  "description": "Application Router for Guest Portal",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@sap/approuter": "^14.0.0"
+  },
+  "scripts": {
+    "start": "node node_modules/@sap/approuter/approuter.js"
+  }
+}

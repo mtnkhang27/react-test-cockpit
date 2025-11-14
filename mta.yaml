@@ -1,0 +1,191 @@
+_schema-version: "3.2"
+ID: cnma-guest
+version: 1.0.2
+description: "CNMA Guest Portal Application with CAP Backend"
+
+parameters:
+  enable-parallel-deployments: true
+  deploy_mode: html5-repo
+
+build-parameters:
+  before-all:
+    - builder: custom
+      commands:
+        - npm install --production
+        - npx -p @sap/cds-dk cds build --production
+        - npm --prefix ./app install ./app
+        - npm run build --prefix ./app
+
+modules:
+  # --------------------- CAP Backend Service ---------------------
+  - name: cnma_guest_srv
+    type: nodejs
+    path: gen/srv
+    parameters:
+      buildpack: nodejs_buildpack
+      memory: 1024M
+      disk-quota: 1024M
+    build-parameters:
+      builder: npm
+    requires:
+      - name: cnma_guest_db
+      - name: cnma_guest_auth
+    provides:
+      - name: cnma_guest_srv_api
+        properties:
+          srv-url: ${default-url}
+
+  # --------------------- Application Router ---------------------
+  - name: cnma_guest_approuter
+    type: approuter.nodejs
+    path: approuter
+    parameters:
+      memory: 1024M
+      disk-quota: 1024M
+    requires:
+      - name: cnma_guest_html5_runtime
+      - name: cnma_guest_xsuaa
+      - name: cnma_guest_srv_api
+        group: destinations
+        properties:
+          name: cnma_guest_srv_api
+          url: ~{srv-url}
+          forwardAuthToken: true
+      - name: cnma_guest_destination
+
+  # --------------------- React App ---------------------
+  - name: cnma_guest_app
+    type: html5
+    path: app
+    build-parameters:
+      builder: custom
+      commands:
+        - npm ci
+        - npm run build
+        - node add-sap-app.js
+      supported-platforms: []
+      build-result: build
+      ignore:
+        - node_modules/
+        - src/
+        - public/
+        - .git/
+        - .gitignore
+        - .env*
+        - "*.md"
+        - tests/
+        - coverage/
+        - package-lock.json
+        - yarn.lock
+
+  # --------------------- HTML5 Deployer ---------------------
+  - name: cnma_guest_html5_deployer
+    type: com.sap.html5.application-content
+    path: html5Deployer
+    parameters:
+      memory: 2048M
+      disk-quota: 2048M
+      public: true
+    requires:
+      - name: cnma_guest_html5_host
+    build-parameters:
+      ignore:
+        - node_modules/.cache/
+        - .git/
+        - "*.md"
+      requires:
+        - name: cnma_guest_app
+          artifacts:
+            - ./*
+          target-path: resources/app
+
+  # --------------------- Database Deployer ---------------------
+  - name: cnma_guest_db_deployer
+    type: hdb
+    path: gen/db
+    parameters:
+      buildpack: nodejs_buildpack
+      memory: 1024M
+      disk-quota: 1024M
+    requires:
+      - name: cnma_guest_db
+
+resources:
+  # --------------------- HANA DB ---------------------
+  - name: cnma_guest_db
+    type: com.sap.xs.hdi-container
+    parameters:
+      service: hana
+      service-plan: hdi-shared
+
+  # --------------------- XSUAA ---------------------
+  - name: cnma_guest_xsuaa
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: xsuaa
+      service-plan: application
+      path: ./xs-security.json
+
+  - name: cnma_guest_auth
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: xsuaa
+      service-plan: application
+      path: ./xs-security.json
+      config:
+        xsappname: cnma-guest-${space}
+        tenant-mode: dedicated
+        role-collections:
+          - name: cnma-guest-admin
+            description: Administrator role
+            role-template-references:
+              - $XSAPPNAME.Admin
+          - name: cnma-guest-user
+            description: User role
+            role-template-references:
+              - $XSAPPNAME.User
+
+  # --------------------- HTML5 Runtime/Host ---------------------
+  - name: cnma_guest_html5_runtime
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: html5-apps-repo
+      service-plan: app-runtime
+      service-name: cnma_guest_html5_runtime
+
+  - name: cnma_guest_html5_host
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: html5-apps-repo
+      service-plan: app-host
+      service-name: cnma_guest_html5_host
+
+  # --------------------- Destination ---------------------
+  - name: cnma_guest_destination
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: destination
+      service-plan: lite
+      config:
+        HTML5Runtime_enabled: true
+        init_data:
+          instance:
+            destinations:
+              - Name: cnma_guest_srv_api
+                Type: HTTP
+                ProxyType: Internet
+                Authentication: NoAuthentication
+                URL: ~{cnma_guest_srv_api/srv-url}
+                HTML5.ForwardAuthToken: true
+                HTML5.DynamicDestination: true
+              - Name: ui5
+                Type: HTTP
+                ProxyType: Internet
+                Authentication: NoAuthentication
+                URL: https://ui5.sap.com
+            existing_destinations_policy: update
+        version: 1.0.0
+    requires:
+      - name: cnma_guest_srv_api
+
+

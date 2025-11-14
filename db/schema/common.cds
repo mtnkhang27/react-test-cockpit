@@ -29,3 +29,7 @@ entity Users : cuid, managed {
     isActive     : Boolean default true;
     totalPoints  : Integer default 0;
 }
+
+entity News : cuid, managed {
+    name: String (200);
+}

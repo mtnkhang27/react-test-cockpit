@@ -1,0 +1,16 @@
+{
+  "name": "cnma_test_guest_cap-db",
+  "version": "1.0.0",
+  "description": "Database module for CNMA Test Guest CAP",
+  "dependencies": {
+    "@sap/cds": "^9.4.4",
+    "@sap/hdi-deploy": "^5",
+    "@sap/hana-client": "^2.21"
+  },
+  "scripts": {
+    "start": "node node_modules/@sap/hdi-deploy/deploy.js --exit"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

@@ -22,6 +22,7 @@ service BettingService {
     entity BetTypes          as projection on betting.BetTypes;
     entity TournamentEntries as projection on tournaments.TournamentEntries;
     entity PlayerStats       as projection on matches.PlayerStats;
+    entity News             as projection on common.News;
     
 
     // User entities (requires auth)
