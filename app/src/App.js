@@ -1,12 +1,12 @@
 import logo from './logo.svg';
 import './App.css';
-import NewsComponent from "./ News";
+import ActivityManagement from "./ News";
 
 function App() {
   return (
     <div className="App">
       <center className='App-header'>
-      <NewsComponent />
+      <ActivityManagement />
       </center>
     </div>
   );

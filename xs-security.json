@@ -6,13 +6,54 @@
     {
       "name": "uaa.user",
       "description": "UAA"
+    },
+    {
+      "name": "$XSAPPNAME.Display",
+      "description": "Display HTML5 Applications"
+    },
+    {
+      "name": "$XSAPPNAME.Develop",
+      "description": "Develop HTML5 Applications"
     }
   ],
   "role-templates": [
     {
       "name": "Token_Exchange",
       "description": "UAA",
-      "scope-references": ["uaa.user"]
+      "scope-references": [
+        "uaa.user"
+      ]
+    },
+    {
+      "name": "GuestPortalViewer",
+      "description": "Viewer of Guest Portal",
+      "scope-references": [
+        "$XSAPPNAME.Display"
+      ]
+    },
+    {
+      "name": "GuestPortalDeveloper",
+      "description": "Developer of Guest Portal",
+      "scope-references": [
+        "$XSAPPNAME.Display",
+        "$XSAPPNAME.Develop"
+      ]
+    }
+  ],
+  "role-collections": [
+    {
+      "name": "cnma_guest_viewer",
+      "description": "Guest Portal Viewer",
+      "role-template-references": [
+        "$XSAPPNAME.GuestPortalViewer"
+      ]
+    },
+    {
+      "name": "cnma_guest_developer",
+      "description": "Guest Portal Developer",
+      "role-template-references": [
+        "$XSAPPNAME.GuestPortalDeveloper"
+      ]
     }
   ]
 }

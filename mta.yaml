@@ -22,9 +22,9 @@ modules:
     type: nodejs
     path: gen/srv
     parameters:
-      buildpack: nodejs_buildpack
       memory: 1024M
       disk-quota: 1024M
+      buildpack: nodejs_buildpack
     build-parameters:
       builder: npm
     requires:
@@ -64,7 +64,7 @@ modules:
         - npm run build
         - node add-sap-app.js
       supported-platforms: []
-      build-result: build
+      build-result: dist
       ignore:
         - node_modules/
         - src/
@@ -80,15 +80,18 @@ modules:
 
   # --------------------- HTML5 Deployer ---------------------
   - name: cnma_guest_html5_deployer
-    type: com.sap.html5.application-content
-    path: html5Deployer
+    type: com.sap.application.content
+    path: .
     parameters:
       memory: 2048M
       disk-quota: 2048M
       public: true
     requires:
       - name: cnma_guest_html5_host
+        parameters:
+          content-target: true
     build-parameters:
+      build-result: ui_resources
       ignore:
         - node_modules/.cache/
         - .git/
@@ -96,32 +99,33 @@ modules:
       requires:
         - name: cnma_guest_app
           artifacts:
-            - ./*
-          target-path: resources/app
+            - './*'
+          target-path: ui_resources/
 
   # --------------------- Database Deployer ---------------------
   - name: cnma_guest_db_deployer
     type: hdb
     path: gen/db
     parameters:
-      buildpack: nodejs_buildpack
       memory: 1024M
       disk-quota: 1024M
+      buildpack: nodejs_buildpack
     requires:
       - name: cnma_guest_db
 
   # --------------------- Destination Content ---------------------
   - name: cnma_guest_destination_content
     type: com.sap.application.content
-
     requires:
       - name: cnma_guest_xsuaa
       - name: cnma_guest_html5_host
+        parameters:
+          service-key:
+            name: cnma_guest_html5_host_key
       - name: cnma_guest_destination
         parameters:
           content-target: true
       - name: cnma_guest_connectivity
-
     parameters:
       content:
         instance:
@@ -129,10 +133,11 @@ modules:
           destinations:
             - Name: cnma_guest_html5_dest
               ServiceInstanceName: cnma_guest_html5_host
+              ServiceKeyName: cnma_guest_html5_host_key
               sap.cloud.service: cnma.guest
-
     build-parameters:
       no-source: true
+
 
 resources:
   # Connectivity
@@ -175,6 +180,7 @@ resources:
             description: User role
             role-template-references:
               - $XSAPPNAME.User
+              - $XSAPPNAME.GuestPortalViewer
 
   # --------------------- HTML5 Runtime/Host ---------------------
   - name: cnma_guest_html5_runtime
@@ -215,6 +221,6 @@ resources:
                 Authentication: NoAuthentication
                 URL: https://ui5.sap.com
             existing_destinations_policy: update
-        version: 1.0.0
+        version: 1.0.2
     requires:
       - name: cnma_guest_srv_api

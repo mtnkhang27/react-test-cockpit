@@ -21,5 +21,59 @@
   "start_url": ".",
   "display": "standalone",
   "theme_color": "#000000",
-  "background_color": "#ffffff"
+  "background_color": "#ffffff",
+  "sap.platform.runtime": {
+  "componentProperties": {
+    "appType": "standalone"
+  }
+},
+
+  "sap.app": {
+    "id": "cnmaguestportal",
+    "type": "application",
+    "i18n": "i18n/i18n.properties",
+    "title": "{{appTitle}}",
+    "description": "{{appDescription}}",
+    "applicationVersion": {
+      "version": "1.0.0"
+    },
+    "sourceTemplate": {
+      "id": "servicecatalog.connectivityComponentForManifest",
+      "version": "0.0.0"
+    },
+    "crossNavigation": {
+      "inbounds": {
+        "cnma-react-inbound": {
+          "signature": {
+            "parameters": {},
+            "additionalParameters": "allowed"
+          },
+          "semanticObject": "react",
+          "action": "new"
+        }
+      }
+    }
+  },
+  "sap.ui": {
+    "fullWidth": true,
+    "technology": "HTML5", 
+    "icons": {
+      "icon": "sap-icon://task",
+      "favIcon": "",
+      "phone": "",
+      "phone@2": "",
+      "tablet": "",
+      "tablet@2": ""
+    },
+    "deviceTypes": {
+      "desktop": true,
+      "tablet": true,
+      "phone": true
+    }
+  },
+    "sap.cloud": {
+    "public": true,
+    "service": "cnmaguest"
+  }
 }
+ 

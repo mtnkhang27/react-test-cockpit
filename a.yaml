@@ -1,7 +1,7 @@
-_schema-version: "3.2"
-ID: cnma-guest-portal
-version: 1.0.2
-description: "Guest Portal Application with CAP Backend"
+_schema-version: 3.3.0
+ID: cnma_react_app
+version: 1.0.0
+description: "A simple CAP project."
 
 parameters:
   enable-parallel-deployments: true
@@ -17,56 +17,66 @@ build-parameters:
         - npm run build --prefix ./app
 
 modules:
-  # --------------------- CAP Backend Service ---------------------
-  - name: cnma-guest-portal-srv
+  - name: cnma_react_app_srv
     type: nodejs
     path: gen/srv
     parameters:
+      instances: 1
       buildpack: nodejs_buildpack
-      memory: 1024M
-      disk-quota: 1024M
     build-parameters:
-      builder: npm
-    requires:
-      - name: cnma-guest-portal-db
-      - name: cnma-guest-portal-auth
+      builder: npm-ci
     provides:
-      - name: srv-api
+      - name: srv-api # required by consumers of CAP services (e.g. approuter)
         properties:
           srv-url: ${default-url}
+    requires:
+      []
 
-  # --------------------- Application Router ---------------------
-  - name: my-approuter
+ # --------------------- APPROUTER MODULE ---------------------
+  - name: cnma_react_approuter
+ # ------------------------------------------------------------
     type: approuter.nodejs
     path: approuter
-    parameters:
-      memory: 1024M
-      disk-quota: 1024M
     requires:
-      - name: my-html5-runtime
-      - name: my-xsuaa
-      - name: srv-api
-        group: destinations
-        properties:
-          name: srv-api
-          url: ~{srv-url}
-          forwardAuthToken: true
-      - name: my-destination
-      
+      - name: cnma_react_html5_runtime
+      - name: cnma_react_destination
 
-  # --------------------- React App ---------------------
-  - name: my-app
+  # --------------------- HTML5DEPLOYER MODULE -----------------
+  - name: cnma_react_hmtl5_deployer
+ # ------------------------------------------------------------
+    type: com.sap.application.content
+    path: .
+    parameters:
+      memory: 2048M
+      disk-quota: 2048M
+      public: true
+    requires:
+      - name: cnma_react_html5_host
+        parameters:
+          content-target: true
+    build-parameters:
+      build-result: ui_resources        # This is the folder containing the build files
+      ignore:
+        - node_modules/.cache/
+        - .git/
+        - "*.md"
+      requires:
+        - name: cnma_react_html5_ui
+          artifacts:
+            - './*'
+          target-path: ui_resources/
+
+ # --------------------- REACT APP MODULE ---------------------
+  - name: cnma_react_html5_ui
     type: html5
     path: app
     build-parameters:
+      build-result: dist
       builder: custom
       commands:
         - npm ci
-        - npm run build
-        - node add-sap-app.js
-      supported-platforms: []
-      build-result: build
-      ignore:                      # THÊM PHẦN NÀY
+        - npm run build:zip
+      ignore:
         - node_modules/
         - src/
         - public/
@@ -78,115 +88,78 @@ modules:
         - coverage/
         - package-lock.json
         - yarn.lock
+      supported-platforms: []
 
-  # --------------------- HTML5 Deployer ---------------------
-  - name: my-html5-deployer
-    type: com.sap.html5.application-content
-    path: html5Deployer
-    parameters:
-      memory: 2048M
-      disk-quota: 2048M
-      public: true   # <-- thêm cái này để app public
+  # ------------------------------------------------------------
+  # (5) UI REPO REGISTRY MODULE
+  # ------------------------------------------------------------
+  - name: cnma_react_destination_content
+    type: com.sap.application.content    
 
     requires:
-      - name: my-html5-host
+    - name: cnma_react_html5_host
+      parameters:
+        service-key:
+          name: cnma_react_html5_host_key
+
+    - name: cnma_react_destination
+      parameters:
+        content-target: true   
+
     build-parameters:
-      ignore:                      # THÊM PHẦN NÀY
-        - node_modules/.cache/
-        - .git/
-        - "*.md"
-      requires:
-        - name: my-app
-          artifacts:
-            - ./*
-          target-path: resources/app
-
-  # --------------------- Database Deployer ---------------------
-  - name: cnma-guest-portal-db-deployer
-    type: hdb
-    path: gen/db
-    parameters:
-      buildpack: nodejs_buildpack
-      memory: 1024M
-      disk-quota: 1024M
-    requires:
-      - name: cnma-guest-portal-db
+      no-source: true
+    parameters:      
+      content:
+        instance:
+          existing_destinations_policy: update                     
+          destinations:
+          - Name: cnma_react_html5_dest
+            ServiceInstanceName: cnma_react_html5_host
+            ServiceKeyName: cnma_react_html5_host_key
+            sap.cloud.service: cnma.reactapp   
 
 resources:
-  # --------------------- HANA DB ---------------------
-  - name: cnma-guest-portal-db
-    type: com.sap.xs.hdi-container
-    parameters:
-      service: hana
-      service-plan: hdi-shared
+   # --------------------- HTML5 Runtime ----------------------
+ - name: cnma_react_html5_runtime
+ # ------------------------------------------------------------
+   parameters:
+     service-name: cnma_react_html5_runtime
+     service-plan: app-runtime
+     service: html5-apps-repo
+   type: org.cloudfoundry.managed-service
 
-  # --------------------- XSUAA ---------------------
-  - name: my-xsuaa
-    type: org.cloudfoundry.managed-service
-    parameters:
-      service: xsuaa
-      service-plan: application
-      path: ./xs-security.json
+# --------------------- HTML5 Host -------------------------
+ - name: cnma_react_html5_host
+# ------------------------------------------------------------
+   parameters:
+     service-name: cnma_react_html5_host
+     service-plan: app-host
+     service: html5-apps-repo
+   type: org.cloudfoundry.managed-service
 
-  - name: cnma-guest-portal-auth
-    type: org.cloudfoundry.managed-service
-    parameters:
-      service: xsuaa
-      service-plan: application
-      path: ./xs-security.json
-      config:
-        xsappname: cnma-guest-portal-${space}
-        tenant-mode: dedicated
-        role-collections:
-          - name: cnma-guest-portal-admin
-            description: Administrator role
-            role-template-references:
-              - $XSAPPNAME.Admin
-          - name: cnma-guest-portal-user
-            description: User role
-            role-template-references:
-              - $XSAPPNAME.User
-
-  # --------------------- HTML5 Runtime/Host ---------------------
-  - name: my-html5-runtime
-    type: org.cloudfoundry.managed-service
-    parameters:
-      service: html5-apps-repo
-      service-plan: app-runtime
-      service-name: my-html5-runtime
-
-  - name: my-html5-host
-    type: org.cloudfoundry.managed-service
-    parameters:
-      service: html5-apps-repo
-      service-plan: app-host
-      service-name: my-html5-host
-
-  - name: my-destination
-    type: org.cloudfoundry.managed-service
-    parameters:
-      service: destination
-      service-plan: lite
-      config:
-        HTML5Runtime_enabled: true
-        init_data:
-          instance:
-            destinations:
-              - Name: srv-api
-                Type: HTTP
-                ProxyType: Internet
-                Authentication: NoAuthentication
-                URL: ~{srv-api/srv-url}
-                HTML5.ForwardAuthToken: true
-                HTML5.DynamicDestination: true
-              - Name: ui5
-                Type: HTTP
-                ProxyType: Internet
-                Authentication: NoAuthentication
-                URL: https://ui5.sap.com
-            existing_destinations_policy: update
-        version: 1.0.0
-    requires:
-      - name: srv-api
-
-
+  # ------------------------------------------------------------
+  # (4) DESTINATION SERVICE INSTANCE
+  # ------------------------------------------------------------
+ - name: cnma_react_destination
+   type: org.cloudfoundry.managed-service
+   requires:
+    - name: srv-api
+   parameters:
+     service: destination
+     service-plan: lite
+     forwardAuthToken: true
+     config:
+       HTML5Runtime_enabled: true
+       init_data:
+         instance:
+           existing_destinations_policy: ignore
+           destinations:
+             - Name: cnma_react_srv_destination
+               Description: Supplier Inquiry destination
+               Authentication: NoAuthentication
+               ProxyType: Internet
+               Type: HTTP
+               URL: ~{srv-api/srv-url}
+               HTML5.DynamicDestination: true
+               HTML5.ForwardAuthToken: true
+               HTML5.Timeout: 600000

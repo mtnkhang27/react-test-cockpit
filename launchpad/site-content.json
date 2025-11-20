@@ -1,0 +1,13 @@
+{
+  "groups": {
+    "GuestGroup": {
+      "title": "Guest Module",
+      "tiles": {
+        "GuestPortalTile": {
+          "appId": "cnmaguestportal",
+          "inboundId": "GuestPortal-display"
+        }
+      }
+    }
+  }
+}
